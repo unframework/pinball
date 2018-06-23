@@ -96,7 +96,7 @@ void physicsStep() {
     float closestPortion = travelPortion;
     struct bumper *closestBumper = 0;
 
-    for (struct bumper *bmp = bumpers; bmp < &bumpers + 1; bmp += 1) {
+    for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
       float portion = applyBumper(ball, ball_d, travelPortion, bmp);
 
       if (portion < closestPortion) {
@@ -141,7 +141,7 @@ void setup() {
 
   randomSeed(analogRead(0));
 
-  for (struct bumper *bmp = bumpers; bmp < &bumpers + 1; bmp += 1) {
+  for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
     computeEdges(bmp);
   }
 }
@@ -171,7 +171,7 @@ void drawBall() {
 }
 
 void drawBumpers() {
-  for (struct bumper *bmp = bumpers; bmp < &bumpers + 1; bmp += 1) {
+  for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
     TV.draw_line(tvCX + bmp->p1[0], tvCY - bmp->p1[1], tvCX + bmp->p2[0], tvCY - bmp->p2[1], WHITE);
   }
 }
