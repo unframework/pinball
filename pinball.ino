@@ -33,36 +33,32 @@ int tvCX;
 int tvCY;
 
 struct bumper {
+  float p1[2], p2[2];
+  float along[2];
   float normal[2];
   float offset;
   float left, right;
-  float along[2];
-  float p1[2], p2[2];
 };
 
 bumper bumpers[] = {
-  { { -sin(-0.1), cos(-0.1) }, -10, -10, 10 },
-  { { -sin(0.1), cos(0.1) }, -30, -35, 35 },
-  { { -sin(1.2), cos(1.2) }, -30, -35, 35 },
-  { { -sin(2.6), cos(2.6) }, -30, -35, 35 },
-  { { -sin(-2.6), cos(-2.6) }, -30, -35, 35 },
-  { { -sin(-1.2), cos(-1.2) }, -30, -35, 35 }
+  { { -20, 6 }, { 20, -4 } },
+  { { 20, -4 }, { 30, 20 } }
 };
 
 void computeEdges(struct bumper *self) {
-  self->along[0] = self->normal[1];
-  self->along[1] = -self->normal[0];
+  float delta[2] = { self->p2[0] - self->p1[0], self->p2[1] - self->p1[1] };
+  float lengthSq = vec2dot(delta, delta);
+  float length = sqrt(lengthSq);
 
-  float selfDrawOffset = self->offset - 2;
-  float origin[2] = { selfDrawOffset * self->normal[0], selfDrawOffset * self->normal[1] };
+  self->along[0] = delta[0] / length;
+  self->along[1] = delta[1] / length;
+  self->normal[0] = -self->along[1];
+  self->normal[1] = self->along[0];
+  self->offset = vec2dot(self->normal, self->p1);
 
-  float left = self->left;
-  float right = self->right;
-
-  self->p1[0] = origin[0] + left * self->along[0];
-  self->p1[1] = origin[1] + left * self->along[1];
-  self->p2[0] = origin[0] + right * self->along[0];
-  self->p2[1] = origin[1] + right * self->along[1];
+  float originDelta[2] = { self->p1[0] - self->offset * self->normal[0], self->p1[1] - self->offset * self->normal[1] };
+  self->left = vec2dot(self->along, originDelta) - EPS; // extra length to avoid "leaks"
+  self->right = self->left + length + EPS + EPS;
 }
 
 float applyBumper(float ball[], float ball_d[], float portion, struct bumper *bottom) {
