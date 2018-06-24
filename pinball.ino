@@ -3,7 +3,7 @@
 
 TVout TV;
 
-float ball[2] = { 0, 40 };
+float ball[2] = { -20, 40 };
 float ball_d[2] = { 0.1, 0 };
 
 float EPS = 0.00001;
@@ -27,37 +27,52 @@ float vec2dot(float a[], float b[]) {
   return a[0] * b[0] + a[1] * b[1];
 }
 
+float vec2cross(float a[], float b[]) {
+  return a[1] * b[0] - a[0] * b[1];
+}
+
 bool on = false; // strobe to detect freezes
 
 int tvCX;
 int tvCY;
 
 struct bumper {
-  float p1[2], p2[2];
-  float along[2];
+  int p1[2], p2[2];
   float normal[2];
   float offset;
   float left, right;
 };
 
 bumper bumpers[] = {
-  { { -20, 6 }, { 20, -4 } },
-  { { 20, -4 }, { 30, 20 } }
+  { { -30, 48 }, { -20, 5 } },
+  { { -5, 15 }, { -10, 48 } },
+
+  { { -20, 5 }, { 20, -5 } },
+  { { 35, 10 }, { -5, 15 } },
+
+  { { 20, -5 }, { 15, -15 } },
+  { { 30, -30 }, { 35, 10 } },
+
+  { { 15, -15 }, { -20, -20 } },
+  { { -5, -32 }, { 30, -30 } },
+
+  { { -20, -20 }, { -30, -48 } },
+  { { -10, -48 }, { -5, -32 } }
 };
 
 void computeEdges(struct bumper *self) {
+  float p1[2] = { self->p1[0], self->p1[1] };
   float delta[2] = { self->p2[0] - self->p1[0], self->p2[1] - self->p1[1] };
   float lengthSq = vec2dot(delta, delta);
   float length = sqrt(lengthSq);
 
-  self->along[0] = delta[0] / length;
-  self->along[1] = delta[1] / length;
-  self->normal[0] = -self->along[1];
-  self->normal[1] = self->along[0];
-  self->offset = vec2dot(self->normal, self->p1);
+  float along[2] = { delta[0] / length, delta[1] / length };
+  self->normal[0] = -along[1];
+  self->normal[1] = along[0];
+  self->offset = vec2dot(self->normal, p1);
 
   float originDelta[2] = { self->p1[0] - self->offset * self->normal[0], self->p1[1] - self->offset * self->normal[1] };
-  self->left = vec2dot(self->along, originDelta) - EPS; // extra length to avoid "leaks"
+  self->left = vec2dot(along, originDelta) - EPS; // extra length to avoid "leaks"
   self->right = self->left + length + EPS + EPS;
 }
 
@@ -70,7 +85,7 @@ float applyBumper(float ball[], float ball_d[], float portion, struct bumper *bo
   // see if our (portioned) delta will "eat away" at any distance we have left
   if (bottomPos_d > 0 && bottomPos_rel >= -EPS && bottomPos_rel < portion * bottomPos_d) {
     float subPortion = bottomPos_rel / bottomPos_d;
-    float alongPos = vec2dot(ball, bottom->along) + subPortion * vec2dot(ball_d, bottom->along);
+    float alongPos = vec2cross(bottom->normal, ball) + subPortion * vec2cross(bottom->normal, ball_d);
 
     // check against ends
     if (alongPos > bottom->left && alongPos < bottom->right) {
