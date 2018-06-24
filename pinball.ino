@@ -148,7 +148,7 @@ void physicsStep() {
       float normalVel = vec2dot(ball_d, closestBumper->normal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(0.6, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(0.1, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumper->normal[0];
       ball_d[1] -= dampenedAmount * closestBumper->normal[1];
     }
