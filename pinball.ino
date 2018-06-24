@@ -103,6 +103,21 @@ void physicsStep() {
 
   float travelPortion = 1;
 
+  float nextX = ball[0] + ball_d[0];
+  float nextY = ball[1] + ball_d[1];
+
+  if (nextX <= -64) {
+    ball[0] += 128; // @todo this better
+  } else if (nextY >= 64) {
+    ball[0] -= 128;
+  }
+
+  if (nextY <= -48) {
+    ball[1] += 96; // @todo this better
+  } else if (nextY >= 48) {
+    ball[1] -= 96;
+  }
+
   do {
     float closestPortion = travelPortion;
     struct bumper *closestBumper = 0;
