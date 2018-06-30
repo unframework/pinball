@@ -40,8 +40,6 @@ float vec2cross(float a[], float b[]) {
   return a[1] * b[0] - a[0] * b[1];
 }
 
-bool on = false; // strobe to detect freezes
-
 int tvCX;
 int tvCY;
 
@@ -212,39 +210,41 @@ void setup() {
   for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
     computeEdges(bmp);
   }
-}
-
-void loop() {
-  on = !on;
-
-  TV.delay_frame(1);
-
-  for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
-    physicsStep(ball->position, ball->delta);
-  }
 
   TV.clear_screen();
-  TV.draw_rect(1, 1, 1, 1, on ? WHITE : BLACK);
+  drawBumpers();
 
+  // initial display for inverted draw to work
   for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
     drawBall(ball->position);
   }
+}
 
-  drawBumpers();
+void loop() {
+  TV.delay_frame(1);
+
+  for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
+    drawBall(ball->position);
+    physicsStep(ball->position, ball->delta);
+    drawBall(ball->position);
+  }
+
+  TV.draw_rect(1, 1, 1, 1, INVERT); // strobe to detect freezes
 }
 
 void drawBall(float ball[]) {
   float s_ball[2] = { ball[0] + tvCX, tvCY - ball[1] };
 
   // screen-space sizing
-  TV.draw_line(s_ball[0] - 2, s_ball[1], s_ball[0], s_ball[1] + 2, WHITE);
-  TV.draw_line(s_ball[0], s_ball[1] + 2, s_ball[0] + 2, s_ball[1], WHITE);
-  TV.draw_line(s_ball[0] + 2, s_ball[1], s_ball[0], s_ball[1] - 2, WHITE);
-  TV.draw_line(s_ball[0], s_ball[1] - 2, s_ball[0] - 2, s_ball[1], WHITE);
+  TV.draw_rect(s_ball[0], s_ball[1], 1, 1, INVERT); // strobe to detect freezes
+  // TV.draw_line(s_ball[0] - 2, s_ball[1], s_ball[0], s_ball[1] + 2, WHITE);
+  // TV.draw_line(s_ball[0], s_ball[1] + 2, s_ball[0] + 2, s_ball[1], WHITE);
+  // TV.draw_line(s_ball[0] + 2, s_ball[1], s_ball[0], s_ball[1] - 2, WHITE);
+  // TV.draw_line(s_ball[0], s_ball[1] - 2, s_ball[0] - 2, s_ball[1], WHITE);
 }
 
 void drawBumpers() {
   for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
-    TV.draw_line(tvCX + bmp->p1[0], tvCY - bmp->p1[1], tvCX + bmp->p2[0], tvCY - bmp->p2[1], WHITE);
+    TV.draw_line(tvCX + bmp->p1[0], tvCY - bmp->p1[1], tvCX + bmp->p2[0], tvCY - bmp->p2[1], INVERT);
   }
 }
