@@ -43,16 +43,25 @@ struct bumper {
   float left, right;
 };
 
-bumper bumpers[] = {
-  { { -60, 0 }, { -60 + 6, -1 } },
-  { { 60 - 7, 0 }, { 60, 2 } },
+#define BUMPHW 12
+#define MAX_BUMP_X (60 - BUMPHW)
+#define BUMP(x, y, vd) { { x - BUMPHW, y + vd }, { x + BUMPHW, y - vd } }
 
-  { { -42, -28 }, { -42 + 12, -32 } },
-  { { -26, 32 }, { -26 + 9, 37 } },
-  { { 8, 40 }, { 8 + 9, 38 } },
-  { { -12, -32 }, { -12 + 9, -30 } },
-  { { -22, 10 }, { -22 + 13, 5 } },
-  { { 10, -10 }, { 10 + 11, -5 } }
+bumper bumpers[] = {
+  BUMP(-MAX_BUMP_X, 0, 1),
+  BUMP(MAX_BUMP_X, 0, -2),
+
+  BUMP(0, 35, 3),
+
+  BUMP((MAX_BUMP_X / 2) * -1, 15, 2),
+  BUMP((MAX_BUMP_X / 2) * 1, 15, -3),
+
+  BUMP(0, 0, 2),
+
+  BUMP((MAX_BUMP_X / 2) * -1, -15, 3),
+  BUMP((MAX_BUMP_X / 2) * 1, -15, -2),
+
+  BUMP(0, -35, -4),
 };
 
 float leftWallNormal[] = { 1, 0 };
