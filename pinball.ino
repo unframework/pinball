@@ -3,8 +3,17 @@
 
 TVout TV;
 
-float ball[2] = { -20, 40 };
-float ball_d[2] = { 0.2, 0 };
+struct ball_movement {
+  float position[2];
+  float delta[2];
+};
+
+ball_movement balls[] = {
+  { { -20, 40 }, { 0.2, 0 } },
+  { { 10, 30 }, { 0.5, 0 } },
+  { { -10, 20 }, { 0.1, 0 } },
+  { { 20, -10 }, { -0.3, 0 } }
+};
 
 float EPS = 0.00001;
 
@@ -119,7 +128,7 @@ float applyWall(float ball[], float ball_d[], float portion, float normal[], flo
   return portion;
 }
 
-void physicsStep() {
+void physicsStep(float ball[], float ball_d[]) {
   // add gravity
   ball_d[1] -= 0.05;
 
@@ -210,16 +219,21 @@ void loop() {
 
   TV.delay_frame(1);
 
-  physicsStep();
+  for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
+    physicsStep(ball->position, ball->delta);
+  }
 
   TV.clear_screen();
   TV.draw_rect(1, 1, 1, 1, on ? WHITE : BLACK);
 
-  drawBall();
+  for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
+    drawBall(ball->position);
+  }
+
   drawBumpers();
 }
 
-void drawBall() {
+void drawBall(float ball[]) {
   float s_ball[2] = { ball[0] + tvCX, tvCY - ball[1] };
 
   // screen-space sizing
