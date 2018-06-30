@@ -60,6 +60,8 @@ bumper bumpers[] = {
   { { -10, -48 }, { -5, -32 } }
 };
 
+float wallNormal[] = { 0, 1 };
+
 void computeEdges(struct bumper *self) {
   float p1[2] = { self->p1[0], self->p1[1] };
   float delta[2] = { self->p2[0] - self->p1[0], self->p2[1] - self->p1[1] };
@@ -97,6 +99,21 @@ float applyBumper(float ball[], float ball_d[], float portion, struct bumper *bo
   return portion;
 }
 
+float applyWall(float ball[], float ball_d[], float portion, float normal[], float offset) {
+  // bounce?
+  float bottomPos = vec2dot(ball, normal);
+  float bottomPos_rel = bottomPos - offset;
+  float bottomPos_d = -vec2dot(ball_d, normal);
+
+  // see if our (portioned) delta will "eat away" at any distance we have left
+  if (bottomPos_d > 0 && bottomPos_rel < portion * bottomPos_d) {
+    // return portion of travel
+    return bottomPos_rel / bottomPos_d;
+  }
+
+  return portion;
+}
+
 void physicsStep() {
   // add gravity
   ball_d[1] -= 0.05;
@@ -120,14 +137,21 @@ void physicsStep() {
 
   do {
     float closestPortion = travelPortion;
-    struct bumper *closestBumper = 0;
+    float *closestBumperNormal = 0;
+
+    float wallPortion = applyWall(ball, ball_d, travelPortion, wallNormal, -40);
+
+    if (wallPortion < closestPortion) {
+      closestPortion = wallPortion;
+      closestBumperNormal = wallNormal;
+    }
 
     for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
       float portion = applyBumper(ball, ball_d, travelPortion, bmp);
 
       if (portion < closestPortion) {
         closestPortion = portion;
-        closestBumper = bmp;
+        closestBumperNormal = bmp->normal;
       }
     }
 
@@ -144,13 +168,13 @@ void physicsStep() {
     }
 
     // apply bumper restitution
-    if (closestBumper != 0) {
-      float normalVel = vec2dot(ball_d, closestBumper->normal);
+    if (closestBumperNormal != 0) {
+      float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
       float dampenedAmount = 2 * normalVel + min(0.1, -normalVel);
-      ball_d[0] -= dampenedAmount * closestBumper->normal[0];
-      ball_d[1] -= dampenedAmount * closestBumper->normal[1];
+      ball_d[0] -= dampenedAmount * closestBumperNormal[0];
+      ball_d[1] -= dampenedAmount * closestBumperNormal[1];
     }
   } while(travelPortion > 0);
 }
