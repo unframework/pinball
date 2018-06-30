@@ -4,7 +4,7 @@
 TVout TV;
 
 float ball[2] = { -20, 40 };
-float ball_d[2] = { 0.1, 0 };
+float ball_d[2] = { 0.2, 0 };
 
 float EPS = 0.00001;
 
@@ -44,23 +44,19 @@ struct bumper {
 };
 
 bumper bumpers[] = {
-  { { -30, 48 }, { -20, 5 } },
-  { { -5, 15 }, { -10, 48 } },
+  { { -60, 0 }, { -60 + 6, -1 } },
+  { { 60 - 7, 0 }, { 60, 2 } },
 
-  { { -20, 5 }, { 20, -5 } },
-  { { 35, 10 }, { -5, 15 } },
-
-  { { 20, -5 }, { 15, -15 } },
-  { { 30, -30 }, { 35, 10 } },
-
-  { { 15, -15 }, { -20, -20 } },
-  { { -5, -32 }, { 30, -30 } },
-
-  { { -20, -20 }, { -30, -48 } },
-  { { -10, -48 }, { -5, -32 } }
+  { { -42, -28 }, { -42 + 12, -32 } },
+  { { -26, 32 }, { -26 + 9, 37 } },
+  { { 8, 40 }, { 8 + 9, 38 } },
+  { { -12, -32 }, { -12 + 9, -30 } },
+  { { -22, 10 }, { -22 + 13, 5 } },
+  { { 10, -10 }, { 10 + 11, -5 } }
 };
 
-float wallNormal[] = { 0, 1 };
+float leftWallNormal[] = { 1, 0 };
+float rightWallNormal[] = { -1, 0 };
 
 void computeEdges(struct bumper *self) {
   float p1[2] = { self->p1[0], self->p1[1] };
@@ -120,30 +116,34 @@ void physicsStep() {
 
   float travelPortion = 1;
 
-  float nextX = ball[0] + ball_d[0];
   float nextY = ball[1] + ball_d[1];
 
-  if (nextX <= -64) {
-    ball[0] += 128; // @todo this better
-  } else if (nextY >= 64) {
-    ball[0] -= 128;
+  while (nextY <= -48) {
+    ball[1] += 96; // @todo this better
+    nextY += 96;
   }
 
-  if (nextY <= -48) {
-    ball[1] += 96; // @todo this better
-  } else if (nextY >= 48) {
+  while (nextY > 48) {
     ball[1] -= 96;
+    nextY -= 96;
   }
 
   do {
     float closestPortion = travelPortion;
     float *closestBumperNormal = 0;
 
-    float wallPortion = applyWall(ball, ball_d, travelPortion, wallNormal, -40);
+    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -55);
 
-    if (wallPortion < closestPortion) {
-      closestPortion = wallPortion;
-      closestBumperNormal = wallNormal;
+    if (leftWallPortion < closestPortion) {
+      closestPortion = leftWallPortion;
+      closestBumperNormal = leftWallNormal;
+    }
+
+    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -55);
+
+    if (rightWallPortion < closestPortion) {
+      closestPortion = rightWallPortion;
+      closestBumperNormal = rightWallNormal;
     }
 
     for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
