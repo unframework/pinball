@@ -51,15 +51,15 @@ bumper bumpers[] = {
   BUMP(-MAX_BUMP_X, 0, 1),
   BUMP(MAX_BUMP_X, 0, -2),
 
-  BUMP(0, 35, 3),
+  BUMP(0, 35, 5),
 
-  BUMP((MAX_BUMP_X / 2) * -1, 15, 2),
-  BUMP((MAX_BUMP_X / 2) * 1, 15, -3),
+  BUMP((MAX_BUMP_X / 2) * -1, 15, 6),
+  BUMP((MAX_BUMP_X / 2) * 1, 15, -5),
 
   BUMP(0, 0, 2),
 
-  BUMP((MAX_BUMP_X / 2) * -1, -15, 3),
-  BUMP((MAX_BUMP_X / 2) * 1, -15, -2),
+  BUMP((MAX_BUMP_X / 2) * -1, -15, 7),
+  BUMP((MAX_BUMP_X / 2) * 1, -15, -4),
 
   BUMP(0, -35, -4),
 };
@@ -181,7 +181,7 @@ void physicsStep() {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(0.1, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(-0.6, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
     }
