@@ -50,20 +50,24 @@ float leftNormal[] = { cos(LEFT_ANGLE), sin(LEFT_ANGLE) };
 float rightNormal[] = { cos(RIGHT_ANGLE), sin(RIGHT_ANGLE) };
 
 #define BUMPER_OUTER(block) { \
-  { float* bumperNormal = leftNormal; float bumperHalfWidth = 5 / bumperNormal[1]; float bumperNudge = 1; block } \
-  { float* bumperNormal = rightNormal; float bumperHalfWidth = 5 / bumperNormal[1]; float bumperNudge = -1; block } \
+  { float* bumperNormal = leftNormal; float bumperHalfWidth = 5 / bumperNormal[1]; int bumperNudge = 10; block } \
+  { float* bumperNormal = rightNormal; float bumperHalfWidth = 5 / bumperNormal[1]; int bumperNudge = -10; block } \
 }
 
-#define BUMPER_LOOP(block) for (int i = 0; i < 4; i += 1) { float hOffset = bumperNudge * (60 - 30 * i - 5); for (int j = -1; j <= 1; j += 1) { \
+#define BUMPER_LOOP(block) for (int j = -1; j <= 1; j += 1) { \
   float vOffset = j * 32; \
   \
-  float bumperOffset = hOffset * bumperNormal[0] + vOffset * bumperNormal[1]; \
-  float bumperMiddle = hOffset * bumperNormal[1] - vOffset * bumperNormal[0]; \
-  float bumperLeft = -bumperHalfWidth + bumperMiddle; \
-  float bumperRight = bumperHalfWidth + bumperMiddle; \
-  \
-  block \
-} }
+  for (int i = 0; i < 4; i += 1) { \
+    float hOffset = -60 + (120 + bumperNudge + 30 * i + j * 15) % 120; \
+    \
+    float bumperOffset = hOffset * bumperNormal[0] + vOffset * bumperNormal[1]; \
+    float bumperMiddle = hOffset * bumperNormal[1] - vOffset * bumperNormal[0]; \
+    float bumperLeft = -bumperHalfWidth + bumperMiddle; \
+    float bumperRight = bumperHalfWidth + bumperMiddle; \
+    \
+    block \
+  } \
+}
 
 
 float leftWallNormal[] = { 1, 0 };
