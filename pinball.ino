@@ -43,15 +43,15 @@ float vec2cross(float a[], float b[]) {
 int tvCX;
 int tvCY;
 
-#define LEFT_ANGLE (2 * M_PI / 3)
-#define RIGHT_ANGLE (M_PI / 3)
+#define LEFT_ANGLE (3 * M_PI / 4)
+#define RIGHT_ANGLE (M_PI / 4)
 
 float leftNormal[] = { cos(LEFT_ANGLE), sin(LEFT_ANGLE) };
 float rightNormal[] = { cos(RIGHT_ANGLE), sin(RIGHT_ANGLE) };
 
 #define BUMPER_OUTER(block) { \
-  { float* bumperNormal = leftNormal; float bumperHalfWidth = 5 / bumperNormal[1]; int bumperNudge = 10; block } \
-  { float* bumperNormal = rightNormal; float bumperHalfWidth = 5 / bumperNormal[1]; int bumperNudge = -10; block } \
+  { float* bumperNormal = leftNormal; float bumperHalfWidth = 3 / bumperNormal[1]; int bumperNudge = 12; block } \
+  { float* bumperNormal = rightNormal; float bumperHalfWidth = 3 / bumperNormal[1]; int bumperNudge = -12; block } \
 }
 
 #define BUMPER_LOOP(block) for (int j = -1; j <= 1; j += 1) { \
@@ -129,14 +129,14 @@ void physicsStep(float ball[], float ball_d[]) {
     float closestPortion = travelPortion;
     float *closestBumperNormal = 0;
 
-    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -59);
+    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -58);
 
     if (leftWallPortion < closestPortion) {
       closestPortion = leftWallPortion;
       closestBumperNormal = leftWallNormal;
     }
 
-    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -59);
+    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -58);
 
     if (rightWallPortion < closestPortion) {
       closestPortion = rightWallPortion;
@@ -176,7 +176,7 @@ void physicsStep(float ball[], float ball_d[]) {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(0.2, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? 0.2 : -0.6, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
     }
@@ -227,16 +227,15 @@ void drawBall(float ball[]) {
   // TV.draw_line(s_ball[0], s_ball[1] - 2, s_ball[0] - 2, s_ball[1], WHITE);
 }
 
-void drawBumper(float bumperNormal[], float bumperOffset, float bumperLeft, float bumperRight) {
-  float along[] = { bumperNormal[1], -bumperNormal[0] };
-  float origin[2] = { bumperOffset * bumperNormal[0], bumperOffset * bumperNormal[1] };
-
+void drawBumper(int hOffset, int vOffset, float bumperNormal[], float bumperOffset, float bumperLeft, float bumperRight) {
   int p1[2], p2[2];
 
-  p1[0] = origin[0] + bumperLeft * along[0];
-  p1[1] = origin[1] + bumperLeft * along[1];
-  p2[0] = origin[0] + bumperRight * along[0];
-  p2[1] = origin[1] + bumperRight * along[1];
+  // super hacky but more precise display for 45-degree line
+  int amt = bumperNormal[0] > 0 ? -3 : 3;
+  p1[0] = hOffset - 3;
+  p1[1] = vOffset - amt;
+  p2[0] = hOffset + 3;
+  p2[1] = vOffset + amt;
 
   TV.draw_line(tvCX + p1[0], tvCY - p1[1], tvCX + p2[0], tvCY - p2[1], INVERT);
 }
@@ -244,7 +243,7 @@ void drawBumper(float bumperNormal[], float bumperOffset, float bumperLeft, floa
 void drawBumpers() {
   BUMPER_OUTER({
     BUMPER_LOOP({
-      drawBumper(bumperNormal, bumperOffset, bumperLeft, bumperRight);
+      drawBumper(hOffset, vOffset, bumperNormal, bumperOffset, bumperLeft, bumperRight);
     });
   })
 }
