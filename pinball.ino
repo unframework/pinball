@@ -43,78 +43,43 @@ float vec2cross(float a[], float b[]) {
 int tvCX;
 int tvCY;
 
-struct bumper {
-  float normal[2];
-  float offset;
-  float left, right;
-  int p1[2], p2[2];
-};
-
 #define LEFT_ANGLE (2 * M_PI / 3)
 #define RIGHT_ANGLE (M_PI / 3)
 
-#define LEFT_COS cos(LEFT_ANGLE)
-#define LEFT_SIN sin(LEFT_ANGLE)
-#define LEFT_HW (5 / LEFT_SIN)
-#define LEFT_BUMP(hOffset, vOffset) { \
-  { LEFT_COS, LEFT_SIN }, \
-  hOffset * LEFT_COS + vOffset * LEFT_SIN, \
-  -LEFT_HW + hOffset * LEFT_SIN - vOffset * LEFT_COS, LEFT_HW + hOffset * LEFT_SIN - vOffset * LEFT_COS \
+float leftNormal[] = { cos(LEFT_ANGLE), sin(LEFT_ANGLE) };
+float rightNormal[] = { cos(RIGHT_ANGLE), sin(RIGHT_ANGLE) };
+
+#define BUMPER_OUTER(block) { \
+  { float* bumperNormal = leftNormal; float bumperHalfWidth = 5 / bumperNormal[1]; float bumperNudge = 1; block } \
+  { float* bumperNormal = rightNormal; float bumperHalfWidth = 5 / bumperNormal[1]; float bumperNudge = -1; block } \
 }
 
-#define RIGHT_COS cos(RIGHT_ANGLE)
-#define RIGHT_SIN sin(RIGHT_ANGLE)
-#define RIGHT_HW (5 / RIGHT_SIN)
-#define RIGHT_BUMP(hOffset, vOffset) { \
-  { RIGHT_COS, RIGHT_SIN }, \
-  hOffset * RIGHT_COS + vOffset * RIGHT_SIN, \
-  -RIGHT_HW + hOffset * RIGHT_SIN - vOffset * RIGHT_COS, RIGHT_HW + hOffset * RIGHT_SIN - vOffset * RIGHT_COS \
-}
+#define BUMPER_LOOP(block) for (int i = 0; i < 4; i += 1) { float hOffset = bumperNudge * (60 - 30 * i - 5); for (int j = -1; j <= 1; j += 1) { \
+  float vOffset = j * 32; \
+  \
+  float bumperOffset = hOffset * bumperNormal[0] + vOffset * bumperNormal[1]; \
+  float bumperMiddle = hOffset * bumperNormal[1] - vOffset * bumperNormal[0]; \
+  float bumperLeft = -bumperHalfWidth + bumperMiddle; \
+  float bumperRight = bumperHalfWidth + bumperMiddle; \
+  \
+  block \
+} }
 
-bumper bumpers[] = {
-  RIGHT_BUMP(-50, -15),
-  RIGHT_BUMP(-50, 15),
-
-  LEFT_BUMP(-5, -15),
-  RIGHT_BUMP(5, -15),
-
-  LEFT_BUMP(-5, 15),
-  RIGHT_BUMP(5, 15),
-
-  LEFT_BUMP(50, -15),
-  LEFT_BUMP(50, 15),
-};
 
 float leftWallNormal[] = { 1, 0 };
 float rightWallNormal[] = { -1, 0 };
 
-void computeEdges(struct bumper *self) {
-  float along[] = { self->normal[1], -self->normal[0] };
-
-  float origin[2] = { self->offset * self->normal[0], self->offset * self->normal[1] };
-
-  float left = self->left;
-  float right = self->right;
-
-  self->p1[0] = origin[0] + left * along[0];
-  self->p1[1] = origin[1] + left * along[1];
-  self->p2[0] = origin[0] + right * along[0];
-  self->p2[1] = origin[1] + right * along[1];
-}
-
-float applyBumper(float ball[], float ball_d[], float portion, struct bumper *bottom) {
+float applyBumper(float ballOffset, float ballOffset_d, float ballAcross, float ballAcross_d, float portion, float bumperOffset, float bumperLeft, float bumperRight) {
   // bounce?
-  float bottomPos = vec2dot(ball, bottom->normal);
-  float bottomPos_rel = bottomPos - bottom->offset;
-  float bottomPos_d = -vec2dot(ball_d, bottom->normal);
+  float bottomPos_rel = ballOffset - bumperOffset;
 
   // see if our (portioned) delta will "eat away" at any distance we have left
-  if (bottomPos_d > 0 && bottomPos_rel >= -EPS && bottomPos_rel < portion * bottomPos_d) {
-    float subPortion = bottomPos_rel / bottomPos_d;
-    float alongPos = vec2cross(bottom->normal, ball) + subPortion * vec2cross(bottom->normal, ball_d);
+  if (ballOffset_d > 0 && bottomPos_rel >= -EPS && bottomPos_rel < portion * ballOffset_d) {
+    float subPortion = bottomPos_rel / ballOffset_d;
+    float alongPos = ballAcross + subPortion * ballAcross_d;
 
     // check against ends
-    if (alongPos > bottom->left && alongPos < bottom->right) {
+    if (alongPos > bumperLeft && alongPos < bumperRight) {
       // return portion of travel
       return subPortion;
     }
@@ -160,28 +125,35 @@ void physicsStep(float ball[], float ball_d[]) {
     float closestPortion = travelPortion;
     float *closestBumperNormal = 0;
 
-    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -55);
+    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -59);
 
     if (leftWallPortion < closestPortion) {
       closestPortion = leftWallPortion;
       closestBumperNormal = leftWallNormal;
     }
 
-    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -55);
+    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -59);
 
     if (rightWallPortion < closestPortion) {
       closestPortion = rightWallPortion;
       closestBumperNormal = rightWallNormal;
     }
 
-    for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
-      float portion = applyBumper(ball, ball_d, travelPortion, bmp);
+    BUMPER_OUTER({
+      float ballOffset = vec2dot(ball, bumperNormal);
+      float ballOffset_d = -vec2dot(ball_d, bumperNormal);
+      float ballAcross = vec2cross(bumperNormal, ball);
+      float ballAcross_d = vec2cross(bumperNormal, ball_d);
 
-      if (portion < closestPortion) {
-        closestPortion = portion;
-        closestBumperNormal = bmp->normal;
-      }
-    }
+      BUMPER_LOOP({
+        float portion = applyBumper(ballOffset, ballOffset_d, ballAcross, ballAcross_d, travelPortion, bumperOffset, bumperLeft, bumperRight);
+
+        if (portion < closestPortion) {
+          closestPortion = portion;
+          closestBumperNormal = bumperNormal;
+        }
+      })
+    })
 
     // snip away portion we can travel
     ball[0] += closestPortion * ball_d[0];
@@ -200,7 +172,7 @@ void physicsStep(float ball[], float ball_d[]) {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? 0.2 : -0.6, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(0.2, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
     }
@@ -218,10 +190,6 @@ void setup() {
   TV.delay(1000);
 
   randomSeed(analogRead(0));
-
-  for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
-    computeEdges(bmp);
-  }
 
   TV.clear_screen();
   drawBumpers();
@@ -255,8 +223,24 @@ void drawBall(float ball[]) {
   // TV.draw_line(s_ball[0], s_ball[1] - 2, s_ball[0] - 2, s_ball[1], WHITE);
 }
 
+void drawBumper(float bumperNormal[], float bumperOffset, float bumperLeft, float bumperRight) {
+  float along[] = { bumperNormal[1], -bumperNormal[0] };
+  float origin[2] = { bumperOffset * bumperNormal[0], bumperOffset * bumperNormal[1] };
+
+  int p1[2], p2[2];
+
+  p1[0] = origin[0] + bumperLeft * along[0];
+  p1[1] = origin[1] + bumperLeft * along[1];
+  p2[0] = origin[0] + bumperRight * along[0];
+  p2[1] = origin[1] + bumperRight * along[1];
+
+  TV.draw_line(tvCX + p1[0], tvCY - p1[1], tvCX + p2[0], tvCY - p2[1], INVERT);
+}
+
 void drawBumpers() {
-  for (struct bumper *bmp = bumpers; bmp < (struct bumper *)(&bumpers + 1); bmp += 1) {
-    TV.draw_line(tvCX + bmp->p1[0], tvCY - bmp->p1[1], tvCX + bmp->p2[0], tvCY - bmp->p2[1], INVERT);
-  }
+  BUMPER_OUTER({
+    BUMPER_LOOP({
+      drawBumper(bumperNormal, bumperOffset, bumperLeft, bumperRight);
+    });
+  })
 }
