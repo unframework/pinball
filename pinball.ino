@@ -56,12 +56,14 @@ float rightNormal[] = { cos(RIGHT_ANGLE), sin(RIGHT_ANGLE) };
 
 #define BUMPER_LOOP(block) for (int j = -1; j <= 1; j += 1) { \
   float vOffset = j * 32; \
+  float vOffsetX = vOffset * bumperNormal[0]; \
+  float vOffsetY = vOffset * bumperNormal[1]; \
   \
   for (int i = 0; i < 4; i += 1) { \
     float hOffset = -60 + (120 + bumperNudge + 30 * i + j * 15) % 120; \
     \
-    float bumperOffset = hOffset * bumperNormal[0] + vOffset * bumperNormal[1]; \
-    float bumperMiddle = hOffset * bumperNormal[1] - vOffset * bumperNormal[0]; \
+    float bumperOffset = hOffset * bumperNormal[0] + vOffsetY; \
+    float bumperMiddle = hOffset * bumperNormal[1] - vOffsetX; \
     float bumperLeft = -bumperHalfWidth + bumperMiddle; \
     float bumperRight = bumperHalfWidth + bumperMiddle; \
     \
