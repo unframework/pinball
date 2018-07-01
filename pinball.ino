@@ -44,50 +44,62 @@ int tvCX;
 int tvCY;
 
 struct bumper {
-  int p1[2], p2[2];
   float normal[2];
   float offset;
   float left, right;
+  int p1[2], p2[2];
 };
 
-#define BUMPHW 12
-#define MAX_BUMP_X (60 - BUMPHW)
-#define BUMP(x, y, vd) { { x - BUMPHW, y + vd }, { x + BUMPHW, y - vd } }
+#define LEFT_ANGLE (2 * M_PI / 3)
+#define RIGHT_ANGLE (M_PI / 3)
+
+#define LEFT_COS cos(LEFT_ANGLE)
+#define LEFT_SIN sin(LEFT_ANGLE)
+#define LEFT_HW (5 / LEFT_SIN)
+#define LEFT_BUMP(hOffset, vOffset) { \
+  { LEFT_COS, LEFT_SIN }, \
+  hOffset * LEFT_COS + vOffset * LEFT_SIN, \
+  -LEFT_HW + hOffset * LEFT_SIN - vOffset * LEFT_COS, LEFT_HW + hOffset * LEFT_SIN - vOffset * LEFT_COS \
+}
+
+#define RIGHT_COS cos(RIGHT_ANGLE)
+#define RIGHT_SIN sin(RIGHT_ANGLE)
+#define RIGHT_HW (5 / RIGHT_SIN)
+#define RIGHT_BUMP(hOffset, vOffset) { \
+  { RIGHT_COS, RIGHT_SIN }, \
+  hOffset * RIGHT_COS + vOffset * RIGHT_SIN, \
+  -RIGHT_HW + hOffset * RIGHT_SIN - vOffset * RIGHT_COS, RIGHT_HW + hOffset * RIGHT_SIN - vOffset * RIGHT_COS \
+}
 
 bumper bumpers[] = {
-  BUMP(-MAX_BUMP_X, 0, 1),
-  BUMP(MAX_BUMP_X, 0, -2),
+  RIGHT_BUMP(-50, -15),
+  RIGHT_BUMP(-50, 15),
 
-  BUMP(0, 35, 5),
+  LEFT_BUMP(-5, -15),
+  RIGHT_BUMP(5, -15),
 
-  BUMP((MAX_BUMP_X / 2) * -1, 15, 6),
-  BUMP((MAX_BUMP_X / 2) * 1, 15, -5),
+  LEFT_BUMP(-5, 15),
+  RIGHT_BUMP(5, 15),
 
-  BUMP(0, 0, 2),
-
-  BUMP((MAX_BUMP_X / 2) * -1, -15, 7),
-  BUMP((MAX_BUMP_X / 2) * 1, -15, -4),
-
-  BUMP(0, -35, -4),
+  LEFT_BUMP(50, -15),
+  LEFT_BUMP(50, 15),
 };
 
 float leftWallNormal[] = { 1, 0 };
 float rightWallNormal[] = { -1, 0 };
 
 void computeEdges(struct bumper *self) {
-  float p1[2] = { self->p1[0], self->p1[1] };
-  float delta[2] = { self->p2[0] - self->p1[0], self->p2[1] - self->p1[1] };
-  float lengthSq = vec2dot(delta, delta);
-  float length = sqrt(lengthSq);
+  float along[] = { self->normal[1], -self->normal[0] };
 
-  float along[2] = { delta[0] / length, delta[1] / length };
-  self->normal[0] = -along[1];
-  self->normal[1] = along[0];
-  self->offset = vec2dot(self->normal, p1);
+  float origin[2] = { self->offset * self->normal[0], self->offset * self->normal[1] };
 
-  float originDelta[2] = { self->p1[0] - self->offset * self->normal[0], self->p1[1] - self->offset * self->normal[1] };
-  self->left = vec2dot(along, originDelta) - EPS; // extra length to avoid "leaks"
-  self->right = self->left + length + EPS + EPS;
+  float left = self->left;
+  float right = self->right;
+
+  self->p1[0] = origin[0] + left * along[0];
+  self->p1[1] = origin[1] + left * along[1];
+  self->p2[0] = origin[0] + right * along[0];
+  self->p2[1] = origin[1] + right * along[1];
 }
 
 float applyBumper(float ball[], float ball_d[], float portion, struct bumper *bottom) {
