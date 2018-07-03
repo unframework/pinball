@@ -9,10 +9,14 @@ struct ball_movement {
 };
 
 ball_movement balls[] = {
-  { { -20, 40 }, { 0.2, 0 } },
-  { { 10, 30 }, { 0.5, 0 } },
-  { { -10, 20 }, { 0.1, 0 } },
-  { { 20, -10 }, { -0.3, 0 } }
+  { { 0, 20 }, { 0.2, 0.4 } },
+  { { 0, 20 }, { 0.5, -0.2 } },
+  { { 0, 20 }, { -0.1, 0.1 } },
+  { { 0, 20 }, { -0.3, -0.2 } },
+  { { 0, 20 }, { 0.6, 0.2 } },
+  { { 0, 20 }, { 0.7, -0.4 } },
+  { { 0, 20 }, { -0.6, 0.6 } },
+  { { 0, 20 }, { -0.4, -0.3 } }
 };
 
 float EPS = 0.00001;
@@ -71,9 +75,14 @@ float rightNormal[] = { cos(RIGHT_ANGLE), sin(RIGHT_ANGLE) };
   } \
 }
 
+struct bumperCircle {
+  float center[2];
+  float radius;
+};
 
 float leftWallNormal[] = { 1, 0 };
 float rightWallNormal[] = { -1, 0 };
+float bottomWallNormal[] = { 0, 1 };
 
 float applyBumper(float ballOffset, float ballOffset_d, float ballAcross, float ballAcross_d, float portion, float bumperOffset, float bumperLeft, float bumperRight) {
   // bounce?
@@ -89,6 +98,30 @@ float applyBumper(float ballOffset, float ballOffset_d, float ballAcross, float 
       // return portion of travel
       return subPortion;
     }
+  }
+
+  return portion;
+}
+
+// inspired by stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
+float applyBumperCircle(float ball[], float ball_d[], float portion, struct bumperCircle *circle) {
+  float f[2];
+  vec2sub(f, ball, circle->center);
+
+  float a = vec2dot(ball_d, ball_d);
+  float b = 2 * vec2dot(f, ball_d);
+  float c = vec2dot(f, f) - circle->radius * circle->radius;
+
+  float discriminant = b * b - 4 * a * c;
+
+  if (discriminant <= 0) {
+    return portion;
+  }
+
+  float t1 = (-b - sqrt(discriminant)) / (2 * a);
+
+  if (t1 >= -EPS && t1 < portion) {
+    return t1;
   }
 
   return portion;
@@ -115,6 +148,7 @@ void physicsStep(float ball[], float ball_d[]) {
 
   float travelPortion = 1;
 
+  float nextX = ball[0] + ball_d[0];
   float nextY = ball[1] + ball_d[1];
 
   while (nextY <= -48) {
@@ -127,39 +161,67 @@ void physicsStep(float ball[], float ball_d[]) {
     nextY -= 96;
   }
 
+  int iterCount = 0;
   do {
+    iterCount += 1;
+
     float closestPortion = travelPortion;
     float *closestBumperNormal = 0;
+    struct bumperCircle *closestBumperCircle = 0;
 
-    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -58);
+    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -56);
 
     if (leftWallPortion < closestPortion) {
       closestPortion = leftWallPortion;
       closestBumperNormal = leftWallNormal;
     }
 
-    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -58);
+    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -56);
 
     if (rightWallPortion < closestPortion) {
       closestPortion = rightWallPortion;
       closestBumperNormal = rightWallNormal;
     }
 
-    BUMPER_OUTER({
-      float ballOffset = vec2dot(ball, bumperNormal);
-      float ballOffset_d = -vec2dot(ball_d, bumperNormal);
-      float ballAcross = vec2cross(bumperNormal, ball);
-      float ballAcross_d = vec2cross(bumperNormal, ball_d);
+    // float bottomWallPortion = applyWall(ball, ball_d, travelPortion, bottomWallNormal, -40);
 
-      BUMPER_LOOP({
-        float portion = applyBumper(ballOffset, ballOffset_d, ballAcross, ballAcross_d, travelPortion, bumperOffset, bumperLeft, bumperRight);
+    // if (bottomWallPortion < closestPortion) {
+    //   closestPortion = bottomWallPortion;
+    //   closestBumperNormal = bottomWallNormal;
+    // }
 
-        if (portion < closestPortion) {
-          closestPortion = portion;
-          closestBumperNormal = bumperNormal;
-        }
-      })
-    })
+    // BUMPER_OUTER({
+    //   float ballOffset = vec2dot(ball, bumperNormal);
+    //   float ballOffset_d = -vec2dot(ball_d, bumperNormal);
+    //   float ballAcross = vec2cross(bumperNormal, ball);
+    //   float ballAcross_d = vec2cross(bumperNormal, ball_d);
+
+    //   BUMPER_LOOP({
+    //     float portion = applyBumper(ballOffset, ballOffset_d, ballAcross, ballAcross_d, travelPortion, bumperOffset, bumperLeft, bumperRight);
+
+    //     if (portion < closestPortion) {
+    //       closestPortion = portion;
+    //       closestBumperNormal = bumperNormal;
+    //     }
+    //   })
+    // })
+
+    bumperCircle mod1BumperCircle = { { 10 * floor(ball[0] / 10) + 5, 10 * floor(ball[1] / 10) + 5 }, 2 };
+    bumperCircle mod2BumperCircle = { { 10 * floor((ball[0] - 5) / 10) + 10, 10 * floor((ball[1] - 5) / 10) + 10 }, 2 };
+
+    float mod1BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mod1BumperCircle);
+
+    if (mod1BumperCirclePortion < closestPortion) {
+      closestPortion = mod1BumperCirclePortion;
+      closestBumperCircle = &mod1BumperCircle;
+    }
+
+    float mod2BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mod2BumperCircle);
+
+    if (mod2BumperCirclePortion < closestPortion) {
+      closestPortion = mod2BumperCirclePortion;
+      closestBumperCircle = &mod2BumperCircle;
+    }
 
     // snip away portion we can travel
     ball[0] += closestPortion * ball_d[0];
@@ -174,15 +236,31 @@ void physicsStep(float ball[], float ball_d[]) {
     }
 
     // apply bumper restitution
-    if (closestBumperNormal != 0) {
+    // apply bumper restitution (circles are done last, so they are checked first)
+    if (closestBumperCircle != 0) {
+      float normal[2];
+
+      vec2sub(normal, ball, closestBumperCircle->center);
+      float normalLen = sqrt(vec2dot(normal, normal));
+      normal[0] /= normalLen;
+      normal[1] /= normalLen;
+
+      // @todo make reusable function
+      float normalVel = vec2dot(ball_d, normal);
+
+      // non-linear damping
+      float dampenedAmount = 2 * normalVel + min(0.9, -normalVel);
+      ball_d[0] -= dampenedAmount * normal[0];
+      ball_d[1] -= dampenedAmount * normal[1];
+    } else if (closestBumperNormal != 0) {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? 0.2 : 0.8, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? -0.2 : 0.8, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
     }
-  } while(travelPortion > 0);
+  } while(travelPortion > 0 && iterCount < 20);
 }
 
 void setup() {
@@ -198,7 +276,7 @@ void setup() {
   randomSeed(analogRead(0));
 
   TV.clear_screen();
-  drawBumpers();
+  // drawBumpers();
 
   // initial display for inverted draw to work
   for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
@@ -222,7 +300,7 @@ void drawBall(float ball[]) {
   float s_ball[2] = { ball[0] + tvCX, tvCY - ball[1] };
 
   // screen-space sizing
-  TV.draw_rect(s_ball[0], s_ball[1], 1, 1, INVERT); // strobe to detect freezes
+  TV.draw_rect(s_ball[0], s_ball[1], 1, 1, INVERT);
   // TV.draw_line(s_ball[0] - 2, s_ball[1], s_ball[0], s_ball[1] + 2, WHITE);
   // TV.draw_line(s_ball[0], s_ball[1] + 2, s_ball[0] + 2, s_ball[1], WHITE);
   // TV.draw_line(s_ball[0] + 2, s_ball[1], s_ball[0], s_ball[1] - 2, WHITE);
