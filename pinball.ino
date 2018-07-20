@@ -9,14 +9,14 @@ struct ball_movement {
 };
 
 ball_movement balls[] = {
-  { { 0, 20 }, { 0.2, 0.4 } },
-  { { 0, 20 }, { 0.5, -0.2 } },
-  { { 0, 20 }, { -0.1, 0.1 } },
-  { { 0, 20 }, { -0.3, -0.2 } },
-  { { 0, 20 }, { 0.6, 0.2 } },
-  { { 0, 20 }, { 0.7, -0.4 } },
-  { { 0, 20 }, { -0.6, 0.6 } },
-  { { 0, 20 }, { -0.4, -0.3 } }
+  { { -10, 20 }, { 0.2, 0.4 } },
+  { { -10, 20 }, { 0.5, -0.2 } },
+  { { -10, 20 }, { -0.1, 0.1 } },
+  { { -10, 20 }, { -0.3, -0.2 } },
+  { { -10, 20 }, { 0.6, 0.2 } },
+  { { -10, 20 }, { 0.7, -0.4 } },
+  { { -10, 20 }, { -0.6, 0.6 } },
+  { { -10, 20 }, { -0.4, -0.3 } }
 };
 
 float EPS = 0.00001;
@@ -52,6 +52,9 @@ struct bumperCircle {
   float radius;
 };
 
+bumperCircle mod1BumperCircle = { { -80, -100 }, 100 };
+bumperCircle mod2BumperCircle = { { 30, 20 }, 10 };
+
 float leftWallNormal[] = { 1, 0 };
 float rightWallNormal[] = { -1, 0 };
 float bottomWallNormal[] = { 0, 1 };
@@ -73,7 +76,7 @@ float applyBumperCircle(float ball[], float ball_d[], float portion, struct bump
 
   float t1 = (-b - sqrt(discriminant)) / (2 * a);
 
-  if (t1 >= -EPS && t1 < portion) {
+  if (t1 >= -0.5 && t1 < portion) {
     return t1;
   }
 
@@ -136,15 +139,12 @@ void physicsStep(float ball[], float ball_d[]) {
       closestBumperNormal = rightWallNormal;
     }
 
-    // float bottomWallPortion = applyWall(ball, ball_d, travelPortion, bottomWallNormal, -40);
+    float bottomWallPortion = applyWall(ball, ball_d, travelPortion, bottomWallNormal, -40);
 
-    // if (bottomWallPortion < closestPortion) {
-    //   closestPortion = bottomWallPortion;
-    //   closestBumperNormal = bottomWallNormal;
-    // }
-
-    bumperCircle mod1BumperCircle = { { 10 * floor(ball[0] / 10) + 5, 10 * floor(ball[1] / 10) + 5 }, 2 };
-    bumperCircle mod2BumperCircle = { { 10 * floor((ball[0] - 5) / 10) + 10, 10 * floor((ball[1] - 5) / 10) + 10 }, 2 };
+    if (bottomWallPortion < closestPortion) {
+      closestPortion = bottomWallPortion;
+      closestBumperNormal = bottomWallNormal;
+    }
 
     float mod1BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mod1BumperCircle);
 
