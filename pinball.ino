@@ -8,16 +8,10 @@ struct ball_movement {
   float delta[2];
 };
 
-ball_movement balls[] = {
-  { { -10, 20 }, { 0.2, 0.4 } },
-  { { -10, 20 }, { 0.5, -0.2 } },
-  { { -10, 20 }, { -0.1, 0.1 } },
-  { { -10, 20 }, { -0.3, -0.2 } },
-  { { -10, 20 }, { 0.6, 0.2 } },
-  { { -10, 20 }, { 0.7, -0.4 } },
-  { { -10, 20 }, { -0.6, 0.6 } },
-  { { -10, 20 }, { -0.4, -0.3 } }
-};
+#define ORIGIN_X -30
+#define ORIGIN_Y 65
+
+ball_movement balls[8];
 
 float EPS = 0.00001;
 
@@ -52,12 +46,20 @@ struct bumperCircle {
   float radius;
 };
 
-bumperCircle mod1BumperCircle = { { -80, -100 }, 100 };
-bumperCircle mod2BumperCircle = { { 30, 20 }, 10 };
+bumperCircle mod1BumperCircle = { { -30, -70 }, 70 };
+bumperCircle mod2BumperCircle = { { 60, 50 }, 30 };
 
 float leftWallNormal[] = { 1, 0 };
 float rightWallNormal[] = { -1, 0 };
 float bottomWallNormal[] = { 0, 1 };
+
+void resetBall(float ball[], float ball_d[]) {
+  ball_d[0] = 0.3 + random(-10000, 10000) * 0.0001 * 0.1;
+  ball_d[1] = -0.2 + random(-10000, 10000) * 0.0001 * 0.2;
+
+  ball[0] = ORIGIN_X + random(-10000, 10000) * 0.0001 * 2;
+  ball[1] = ORIGIN_Y + random(-10000, 10000) * 0.0001 * 6;
+}
 
 // inspired by stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
 float applyBumperCircle(float ball[], float ball_d[], float portion, struct bumperCircle *circle) {
@@ -102,20 +104,14 @@ void physicsStep(float ball[], float ball_d[]) {
   // add gravity
   ball_d[1] -= 0.05;
 
+  if (ball[1] <= -48) {
+    resetBall(ball, ball_d);
+  }
+
   float travelPortion = 1;
 
   float nextX = ball[0] + ball_d[0];
   float nextY = ball[1] + ball_d[1];
-
-  while (nextY <= -48) {
-    ball[1] += 96; // @todo this better
-    nextY += 96;
-  }
-
-  while (nextY > 48) {
-    ball[1] -= 96;
-    nextY -= 96;
-  }
 
   int iterCount = 0;
   do {
@@ -125,26 +121,26 @@ void physicsStep(float ball[], float ball_d[]) {
     float *closestBumperNormal = 0;
     struct bumperCircle *closestBumperCircle = 0;
 
-    float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -56);
+    // float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -56);
 
-    if (leftWallPortion < closestPortion) {
-      closestPortion = leftWallPortion;
-      closestBumperNormal = leftWallNormal;
-    }
+    // if (leftWallPortion < closestPortion) {
+    //   closestPortion = leftWallPortion;
+    //   closestBumperNormal = leftWallNormal;
+    // }
 
-    float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -56);
+    // float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -56);
 
-    if (rightWallPortion < closestPortion) {
-      closestPortion = rightWallPortion;
-      closestBumperNormal = rightWallNormal;
-    }
+    // if (rightWallPortion < closestPortion) {
+    //   closestPortion = rightWallPortion;
+    //   closestBumperNormal = rightWallNormal;
+    // }
 
-    float bottomWallPortion = applyWall(ball, ball_d, travelPortion, bottomWallNormal, -40);
+    // float bottomWallPortion = applyWall(ball, ball_d, travelPortion, bottomWallNormal, -40);
 
-    if (bottomWallPortion < closestPortion) {
-      closestPortion = bottomWallPortion;
-      closestBumperNormal = bottomWallNormal;
-    }
+    // if (bottomWallPortion < closestPortion) {
+    //   closestPortion = bottomWallPortion;
+    //   closestBumperNormal = bottomWallNormal;
+    // }
 
     float mod1BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mod1BumperCircle);
 
@@ -192,7 +188,7 @@ void physicsStep(float ball[], float ball_d[]) {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? -0.2 : 0.8, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? -0.2 : 0.6, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
     }
@@ -215,6 +211,7 @@ void setup() {
 
   // initial display for inverted draw to work
   for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
+    resetBall(ball->position, ball->delta);
     drawBall(ball->position);
   }
 }
@@ -223,12 +220,16 @@ void loop() {
   TV.delay_frame(1);
 
   for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
-    drawBall(ball->position);
+    // drawBall(ball->position);
     physicsStep(ball->position, ball->delta);
     drawBall(ball->position);
   }
 
-  TV.draw_rect(1, 1, 1, 1, INVERT); // strobe to detect freezes
+  // gradually fade screen
+  TV.draw_rect(random(0, 120), random(0, 96), 1, 1, BLACK);
+  TV.draw_rect(random(0, 120), random(0, 96), 1, 1, BLACK);
+
+  // TV.draw_rect(1, 1, 1, 1, INVERT); // strobe to detect freezes
 }
 
 void drawBall(float ball[]) {
