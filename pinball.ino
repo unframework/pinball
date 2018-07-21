@@ -52,7 +52,7 @@ struct bumperCircle {
 };
 
 float ball_d_angle = 0;
-float ball_d_base = 0.6;
+float ball_d_base = 0.9;
 float ball_d_box[] = { 0.1, 0.2 };
 
 float circleRadius = 45;
@@ -78,10 +78,10 @@ void resetEnvironment() {
   vec2scale(mainBumperCircle.center, angle_unit, circleRadius);
 
   float box[2];
-  vec2scale(box, angle_unit, circleOffset_box[0]);
+  vec2scale(box, angle_unit, circleOffset_box[0] * random(-10000, 10000) * 0.0001);
   vec2add(mainBumperCircle.center, mainBumperCircle.center, box);
 
-  vec2scale(box, angle_unit_cross, circleOffset_box[1]);
+  vec2scale(box, angle_unit_cross, circleOffset_box[1] * random(-10000, 10000) * 0.0001);
   vec2add(mainBumperCircle.center, mainBumperCircle.center, box);
 
   mainBumperCircle.radius = circleRadius;
@@ -94,7 +94,7 @@ void resetBall(float ball[], float ball_d[]) {
 
   // jitter the initial speed
   float box[2];
-  float boost = 0.5 * (angle_unit[1] + 1); // accelerate slightly if coming from below
+  float boost = 0.8 * (angle_unit[1] + 1); // accelerate slightly if coming from below
   vec2scale(ball_d, angle_unit, ball_d_base + boost);
 
   vec2scale(box, angle_unit, ball_d_box[0] * random(-10000, 10000) * 0.0001);
