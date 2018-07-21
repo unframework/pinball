@@ -281,12 +281,10 @@ void loop() {
 }
 
 void drawBall(float ball[]) {
-  float s_ball[2] = { ball[0] + tvCX, tvCY - ball[1] };
+  // perform crude clipping to avoid uint8 overflow
+  if (abs(ball[0]) < 100 && abs(ball[1]) < 100) {
+    float s_ball[2] = { ball[0] + tvCX, tvCY - ball[1] };
 
-  // screen-space sizing
-  TV.draw_rect(s_ball[0], s_ball[1], 1, 1, INVERT);
-  // TV.draw_line(s_ball[0] - 2, s_ball[1], s_ball[0], s_ball[1] + 2, WHITE);
-  // TV.draw_line(s_ball[0], s_ball[1] + 2, s_ball[0] + 2, s_ball[1], WHITE);
-  // TV.draw_line(s_ball[0] + 2, s_ball[1], s_ball[0], s_ball[1] - 2, WHITE);
-  // TV.draw_line(s_ball[0], s_ball[1] - 2, s_ball[0] - 2, s_ball[1], WHITE);
+    TV.set_pixel(s_ball[0], s_ball[1], INVERT);
+  }
 }
