@@ -51,35 +51,51 @@ struct bumperCircle {
   float radius;
 };
 
-float ball_d_angle = -1.1;
-float ball_d_base = 0.45;
+float ball_d_angle = 0;
+float ball_d_base = 0.6;
 float ball_d_box[] = { 0.1, 0.2 };
 
-float angle_unit[] = { cos(ball_d_angle), sin(ball_d_angle) };
-float angle_unit_cross[] = { -angle_unit[1], angle_unit[0] };
+float circleRadius = 45;
+float circleOffset_box[] = { -10, -20 };
 
-float circleRadius = 40;
-float circleOffset_box[] = { 10, 30 };
+float angle_unit[2];
+float angle_unit_cross[2];
 
-bumperCircle mainBumperCircle = {
-  {
-    angle_unit[0] * circleRadius - angle_unit[0] * circleOffset_box[0] - angle_unit_cross[0] * circleOffset_box[1],
-    angle_unit[1] * circleRadius - angle_unit[1] * circleOffset_box[0] - angle_unit_cross[1] * circleOffset_box[1]
-  },
-  circleRadius
-};
+bumperCircle mainBumperCircle = { { 0, 0 }, 10 };
 
 float leftWallNormal[] = { 1, 0 };
 float rightWallNormal[] = { -1, 0 };
 float bottomWallNormal[] = { 0, 1 };
 
+void resetEnvironment() {
+  ball_d_angle = M_PI * random(-10000, 10000) * 0.0001;
+
+  angle_unit[0] = cos(ball_d_angle);
+  angle_unit[1] = sin(ball_d_angle);
+  angle_unit_cross[0] = -angle_unit[1];
+  angle_unit_cross[1] = angle_unit[0];
+
+  vec2scale(mainBumperCircle.center, angle_unit, circleRadius);
+
+  float box[2];
+  vec2scale(box, angle_unit, circleOffset_box[0]);
+  vec2add(mainBumperCircle.center, mainBumperCircle.center, box);
+
+  vec2scale(box, angle_unit_cross, circleOffset_box[1]);
+  vec2add(mainBumperCircle.center, mainBumperCircle.center, box);
+
+  mainBumperCircle.radius = circleRadius;
+}
+
 void resetBall(float ball[], float ball_d[]) {
-  // spawn ball on a line towards center
-  vec2scale(ball, angle_unit, -70 + random(0, 10000) * 0.0001 * 40);
+  // spawn ball on a line towards center, offscreen
+  vec2scale(ball, angle_unit, -70 - random(0, 10000) * 0.0001 * 40);
+  ball[1] += 30 * abs(angle_unit[0]); // aim a bit above to compensate for gravity
 
   // jitter the initial speed
   float box[2];
-  vec2scale(ball_d, angle_unit, ball_d_base);
+  float boost = 0.5 * (angle_unit[1] + 1); // accelerate slightly if coming from below
+  vec2scale(ball_d, angle_unit, ball_d_base + boost);
 
   vec2scale(box, angle_unit, ball_d_box[0] * random(-10000, 10000) * 0.0001);
   vec2add(ball_d, ball_d, box);
@@ -132,7 +148,7 @@ void physicsStep(float ball[], float ball_d[]) {
   // add gravity
   ball_d[1] -= 0.02;
 
-  if (ball[1] <= -48) {
+  if (ball[1] <= -150) {
     resetBall(ball, ball_d);
   }
 
@@ -229,6 +245,8 @@ void setup() {
   randomSeed(analogRead(0));
 
   TV.clear_screen();
+
+  resetEnvironment();
 
   // initial display for inverted draw to work
   for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
