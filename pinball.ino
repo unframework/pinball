@@ -30,6 +30,11 @@ void vec2copy(float out[], float a[]) {
   out[1] = a[1];
 }
 
+void vec2scale(float out[], float a[], float k) {
+  out[0] = a[0] * k;
+  out[1] = a[1] * k;
+}
+
 float vec2dot(float a[], float b[]) {
   return a[0] * b[0] + a[1] * b[1];
 }
@@ -46,19 +51,42 @@ struct bumperCircle {
   float radius;
 };
 
-bumperCircle mod1BumperCircle = { { -30, -70 }, 70 };
-bumperCircle mod2BumperCircle = { { 60, 50 }, 30 };
+float ball_d_angle = -1.1;
+float ball_d_base = 0.45;
+float ball_d_box[] = { 0.1, 0.2 };
+
+float angle_unit[] = { cos(ball_d_angle), sin(ball_d_angle) };
+float angle_unit_cross[] = { -angle_unit[1], angle_unit[0] };
+
+float circleRadius = 40;
+float circleOffset_box[] = { 10, 30 };
+
+bumperCircle mainBumperCircle = {
+  {
+    angle_unit[0] * circleRadius - angle_unit[0] * circleOffset_box[0] - angle_unit_cross[0] * circleOffset_box[1],
+    angle_unit[1] * circleRadius - angle_unit[1] * circleOffset_box[0] - angle_unit_cross[1] * circleOffset_box[1]
+  },
+  circleRadius
+};
 
 float leftWallNormal[] = { 1, 0 };
 float rightWallNormal[] = { -1, 0 };
 float bottomWallNormal[] = { 0, 1 };
 
 void resetBall(float ball[], float ball_d[]) {
-  ball_d[0] = 0.3 + random(-10000, 10000) * 0.0001 * 0.1;
-  ball_d[1] = -0.2 + random(-10000, 10000) * 0.0001 * 0.2;
+  // spawn ball on a line towards center
+  vec2scale(ball, angle_unit, -70 + random(0, 10000) * 0.0001 * 40);
 
-  ball[0] = ORIGIN_X + random(-10000, 10000) * 0.0001 * 2;
-  ball[1] = ORIGIN_Y + random(-10000, 10000) * 0.0001 * 6;
+  // jitter the initial speed
+  float box[2];
+  vec2scale(ball_d, angle_unit, ball_d_base);
+
+  vec2scale(box, angle_unit, ball_d_box[0] * random(-10000, 10000) * 0.0001);
+  vec2add(ball_d, ball_d, box);
+
+  vec2scale(box, angle_unit, ball_d_box[1] * random(-10000, 10000) * 0.0001);
+  ball_d[0] += -box[1];
+  ball_d[1] += box[0];
 }
 
 // inspired by stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
@@ -102,7 +130,7 @@ float applyWall(float ball[], float ball_d[], float portion, float normal[], flo
 
 void physicsStep(float ball[], float ball_d[]) {
   // add gravity
-  ball_d[1] -= 0.05;
+  ball_d[1] -= 0.02;
 
   if (ball[1] <= -48) {
     resetBall(ball, ball_d);
@@ -142,18 +170,11 @@ void physicsStep(float ball[], float ball_d[]) {
     //   closestBumperNormal = bottomWallNormal;
     // }
 
-    float mod1BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mod1BumperCircle);
+    float mod1BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mainBumperCircle);
 
     if (mod1BumperCirclePortion < closestPortion) {
       closestPortion = mod1BumperCirclePortion;
-      closestBumperCircle = &mod1BumperCircle;
-    }
-
-    float mod2BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mod2BumperCircle);
-
-    if (mod2BumperCirclePortion < closestPortion) {
-      closestPortion = mod2BumperCirclePortion;
-      closestBumperCircle = &mod2BumperCircle;
+      closestBumperCircle = &mainBumperCircle;
     }
 
     // snip away portion we can travel
@@ -222,12 +243,12 @@ void loop() {
   for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
     // drawBall(ball->position);
     physicsStep(ball->position, ball->delta);
-    drawBall(ball->position);
+    drawBall(ball->position); // @todo consider proper lines
   }
 
   // gradually fade screen
-  TV.draw_rect(random(0, 120), random(0, 96), 1, 1, BLACK);
-  TV.draw_rect(random(0, 120), random(0, 96), 1, 1, BLACK);
+  // TV.draw_rect(random(0, 120), random(0, 96), 1, 1, BLACK);
+  // TV.draw_rect(random(0, 120), random(0, 96), 1, 1, BLACK);
 
   // TV.draw_rect(1, 1, 1, 1, INVERT); // strobe to detect freezes
 }
