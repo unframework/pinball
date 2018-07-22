@@ -57,7 +57,7 @@ struct bumperCircle {
 float ball_d_angle = 0;
 
 float circleRadius = 30;
-float circleOffset_box[] = { 30, 25 };
+float circleOffset_box[] = { 20, 25 };
 
 float angle_unit[2];
 float angle_unit_cross[2];
@@ -76,7 +76,7 @@ void resetEnvironment() {
   angle_unit_cross[0] = -angle_unit[1];
   angle_unit_cross[1] = angle_unit[0];
 
-  vec2scale(mainBumperCircle.center, angle_unit, circleRadius);
+  vec2scale(mainBumperCircle.center, angle_unit, circleRadius + circleOffset_box[0] * 0.8);
 
   float box[2];
   vec2scale(box, angle_unit, circleOffset_box[0] * random(-10000, 10000) * 0.0001);
