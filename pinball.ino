@@ -285,12 +285,19 @@ void loop() {
       bumpCount += 1; // update bump count to alternate speaker value
     }
   } else {
-    TV.clear_screen();
-    TV.delay(1000);
+    // produce a noticeable signal reset and re-initialize display
+    TV.end();
 
+    delay(500);
+
+    TV.begin(NTSC,120,96);
+
+    tvCX = TV.hres() / 2;
+    tvCY = TV.vres() / 2;
+
+    // set up scene
     resetEnvironment();
 
-    // initial display for inverted draw to work
     for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
       resetBall(ball->position, ball->delta);
     }
