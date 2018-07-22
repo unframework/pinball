@@ -62,6 +62,8 @@ float circleOffset_box[] = { 20, 25 };
 float angle_unit[2];
 float angle_unit_cross[2];
 
+unsigned int bumpCount = 0;
+
 bumperCircle mainBumperCircle = { { 0, 0 }, 10 };
 
 float leftWallNormal[] = { 1, 0 };
@@ -145,7 +147,10 @@ float applyWall(float ball[], float ball_d[], float portion, float normal[], flo
   return portion;
 }
 
-void physicsStep(float ball[], float ball_d[]) {
+void physicsStep(float ball[], float ball_d[], bool *hadCollision) {
+  // default collision result
+  *hadCollision = false;
+
   // add gravity
   ball_d[1] -= 0.001;
 
@@ -222,6 +227,8 @@ void physicsStep(float ball[], float ball_d[]) {
       float dampenedAmount = 2 * normalVel + min(0.2, -normalVel);
       ball_d[0] -= dampenedAmount * normal[0];
       ball_d[1] -= dampenedAmount * normal[1];
+
+      *hadCollision = true;
     } else if (closestBumperNormal != 0) {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
@@ -229,11 +236,15 @@ void physicsStep(float ball[], float ball_d[]) {
       float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? -0.2 : 0.12, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
+
+      *hadCollision = true;
     }
   } while(travelPortion > 0 && iterCount < 20);
 }
 
 void setup() {
+  pinMode(4, OUTPUT);
+
   TV.begin(NTSC,120,96);
 
   tvCX = TV.hres() / 2;
@@ -251,6 +262,7 @@ void loop() {
     TV.delay_frame(1);
 
     int processedCount = 1 + frameCount / 100; // restrict how many balls are processed at first
+    bool anyCollision = false;
 
     for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
       // bail out early if needed
@@ -260,8 +272,17 @@ void loop() {
       }
 
       // drawBall(ball->position);
-      physicsStep(ball->position, ball->delta);
+      bool ballHadCollision;
+      physicsStep(ball->position, ball->delta, &ballHadCollision);
       drawBall(ball->position); // @todo consider proper lines
+
+      anyCollision = anyCollision || ballHadCollision;
+    }
+
+    // "render" tick sound
+    if (anyCollision) {
+      digitalWrite(4, bumpCount % 2);
+      bumpCount += 1; // update bump count to alternate speaker value
     }
   } else {
     TV.clear_screen();
