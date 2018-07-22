@@ -11,7 +11,7 @@ struct ball_movement {
 #define ORIGIN_X -30
 #define ORIGIN_Y 65
 
-ball_movement balls[12];
+ball_movement balls[10];
 
 float EPS = 0.00001;
 
@@ -47,7 +47,7 @@ int tvCX;
 int tvCY;
 
 int frameCount = 0;
-#define MAX_FRAME_COUNT 2000 // a thousand frames is about half a minute?
+#define MAX_FRAME_COUNT 4000 // a thousand frames is about half a minute?
 
 struct bumperCircle {
   float center[2];
@@ -55,11 +55,9 @@ struct bumperCircle {
 };
 
 float ball_d_angle = 0;
-float ball_d_base = 0.6;
-float ball_d_box[] = { 0.1, 0.4 };
 
 float circleRadius = 30;
-float circleOffset_box[] = { 20, 12 };
+float circleOffset_box[] = { 30, 25 };
 
 float angle_unit[2];
 float angle_unit_cross[2];
@@ -96,16 +94,16 @@ void resetBall(float ball[], float ball_d[]) {
 
   // jitter the initial speed
   float box[2];
-  float boost = 1.1 * (angle_unit[1] + 1); // accelerate slightly if coming from below
-  vec2scale(ball_d, angle_unit, ball_d_base + boost);
+  float boost = 0.22 * (angle_unit[1] + 1); // accelerate slightly if coming from below
+  vec2scale(ball_d, angle_unit, 0.12 + boost);
 
-  vec2scale(box, angle_unit, ball_d_box[0] * random(-10000, 10000) * 0.0001);
+  vec2scale(box, angle_unit, 0.08 * random(-10000, 10000) * 0.0001);
   vec2add(ball_d, ball_d, box);
 
-  vec2scale(box, angle_unit_cross, ball_d_box[1] * random(-10000, 10000) * 0.0001);
+  vec2scale(box, angle_unit_cross, 0.35 * random(-10000, 10000) * 0.0001);
   vec2add(ball_d, ball_d, box);
 
-  ball_d[1] += 0.5 * abs(angle_unit[0]); // aim a bit up to compensate for gravity
+  ball_d[1] += 0.1 * abs(angle_unit[0]); // aim a bit up to compensate for gravity
 }
 
 // inspired by stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
@@ -149,7 +147,7 @@ float applyWall(float ball[], float ball_d[], float portion, float normal[], flo
 
 void physicsStep(float ball[], float ball_d[]) {
   // add gravity
-  ball_d[1] -= 0.01;
+  ball_d[1] -= 0.001;
 
   if (ball[1] <= -150) {
     resetBall(ball, ball_d);
@@ -221,14 +219,14 @@ void physicsStep(float ball[], float ball_d[]) {
       float normalVel = vec2dot(ball_d, normal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(0.9, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(0.2, -normalVel);
       ball_d[0] -= dampenedAmount * normal[0];
       ball_d[1] -= dampenedAmount * normal[1];
     } else if (closestBumperNormal != 0) {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? -0.2 : 0.6, -normalVel);
+      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? -0.2 : 0.12, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
     }
@@ -252,7 +250,7 @@ void loop() {
 
     TV.delay_frame(1);
 
-    int processedCount = 1 + frameCount / 20; // restrict how many balls are processed at first
+    int processedCount = 1 + frameCount / 100; // restrict how many balls are processed at first
 
     for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
       // bail out early if needed
