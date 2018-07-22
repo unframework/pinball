@@ -47,7 +47,7 @@ int tvCX;
 int tvCY;
 
 int frameCount = 0;
-#define MAX_FRAME_COUNT 4000 // a thousand frames is about half a minute?
+#define MAX_FRAME_COUNT 6000 // a thousand frames is about half a minute?
 
 struct bumperCircle {
   float center[2];
