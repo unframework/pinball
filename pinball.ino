@@ -59,7 +59,7 @@ float ball_d_base = 0.6;
 float ball_d_box[] = { 0.1, 0.4 };
 
 float circleRadius = 30;
-float circleOffset_box[] = { 20, 8 };
+float circleOffset_box[] = { 20, 12 };
 
 float angle_unit[2];
 float angle_unit_cross[2];
