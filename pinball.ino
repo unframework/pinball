@@ -52,7 +52,6 @@ struct bumperCircle {
 
 float ball_d_angle = 0;
 
-float circleRadius = 30;
 float circleOffset_box[] = {20, 25};
 
 float angle_unit[2];
@@ -67,6 +66,7 @@ float rightWallNormal[] = {-1, 0};
 float bottomWallNormal[] = {0, 1};
 
 void resetEnvironment() {
+  float circleRadius = 30 + random(-10000, 10000) * 0.0001 * 10;
   ball_d_angle = M_PI * random(-10000, 10000) * 0.0001;
 
   angle_unit[0] = cos(ball_d_angle);
