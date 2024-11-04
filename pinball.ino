@@ -52,10 +52,12 @@ struct bumperCircle {
 
 float ball_d_angle = 0;
 
-float circleOffset_box[] = {20, 25};
+float circleOffset_box[] = {25, 25};
 
 float angle_unit[2];
 float angle_unit_cross[2];
+
+// float tmp_pos[2];
 
 unsigned int bumpCount = 0;
 
@@ -66,7 +68,12 @@ float rightWallNormal[] = {-1, 0};
 float bottomWallNormal[] = {0, 1};
 
 void resetEnvironment() {
-  float circleRadius = 30 + random(-10000, 10000) * 0.0001 * 10;
+  float circleRadiusAdd = 5.0 * random(0, 10000) * 0.0001 -
+                          1.0; // -1..4 range before exponentiation
+  float circleRadius =
+      25 + circleRadiusAdd * circleRadiusAdd * circleRadiusAdd *
+               circleRadiusAdd; // exponential randomness (-1..256)
+
   ball_d_angle = M_PI * random(-10000, 10000) * 0.0001;
 
   angle_unit[0] = cos(ball_d_angle);
@@ -75,7 +82,7 @@ void resetEnvironment() {
   angle_unit_cross[1] = angle_unit[0];
 
   vec2scale(mainBumperCircle.center, angle_unit,
-            circleRadius + circleOffset_box[0] * 0.3);
+            circleRadius + circleOffset_box[0] * 0.2);
 
   float box[2];
   vec2scale(box, angle_unit,
@@ -236,6 +243,15 @@ void physicsStep(float ball[], float ball_d[], bool *hadCollision) {
       float dampenedAmount = 2 * normalVel + min(0.2, -normalVel);
       ball_d[0] -= dampenedAmount * normal[0];
       ball_d[1] -= dampenedAmount * normal[1];
+
+      // draw "reaction" dot
+      // float reactionDist =
+      //     normalVel * (20.0 + 10.0 * random(-10000, 10000) * 0.0001);
+      // if (reactionDist < -1.0) {
+      //   vec2scale(tmp_pos, normal, reactionDist);
+      //   vec2add(tmp_pos, ball, tmp_pos);
+      //   drawBall(tmp_pos); // reuse ball drawing function
+      // }
 
       *hadCollision = true;
     } else if (closestBumperNormal != 0) {
