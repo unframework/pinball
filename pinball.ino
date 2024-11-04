@@ -35,13 +35,9 @@ void vec2scale(float out[], float a[], float k) {
   out[1] = a[1] * k;
 }
 
-float vec2dot(float a[], float b[]) {
-  return a[0] * b[0] + a[1] * b[1];
-}
+float vec2dot(float a[], float b[]) { return a[0] * b[0] + a[1] * b[1]; }
 
-float vec2cross(float a[], float b[]) {
-  return a[1] * b[0] - a[0] * b[1];
-}
+float vec2cross(float a[], float b[]) { return a[1] * b[0] - a[0] * b[1]; }
 
 int tvCX;
 int tvCY;
@@ -57,18 +53,18 @@ struct bumperCircle {
 float ball_d_angle = 0;
 
 float circleRadius = 30;
-float circleOffset_box[] = { 20, 25 };
+float circleOffset_box[] = {20, 25};
 
 float angle_unit[2];
 float angle_unit_cross[2];
 
 unsigned int bumpCount = 0;
 
-bumperCircle mainBumperCircle = { { 0, 0 }, 10 };
+bumperCircle mainBumperCircle = {{0, 0}, 10};
 
-float leftWallNormal[] = { 1, 0 };
-float rightWallNormal[] = { -1, 0 };
-float bottomWallNormal[] = { 0, 1 };
+float leftWallNormal[] = {1, 0};
+float rightWallNormal[] = {-1, 0};
+float bottomWallNormal[] = {0, 1};
 
 void resetEnvironment() {
   ball_d_angle = M_PI * random(-10000, 10000) * 0.0001;
@@ -78,13 +74,16 @@ void resetEnvironment() {
   angle_unit_cross[0] = -angle_unit[1];
   angle_unit_cross[1] = angle_unit[0];
 
-  vec2scale(mainBumperCircle.center, angle_unit, circleRadius + circleOffset_box[0] * 0.3);
+  vec2scale(mainBumperCircle.center, angle_unit,
+            circleRadius + circleOffset_box[0] * 0.3);
 
   float box[2];
-  vec2scale(box, angle_unit, circleOffset_box[0] * random(-10000, 10000) * 0.0001);
+  vec2scale(box, angle_unit,
+            circleOffset_box[0] * random(-10000, 10000) * 0.0001);
   vec2add(mainBumperCircle.center, mainBumperCircle.center, box);
 
-  vec2scale(box, angle_unit_cross, circleOffset_box[1] * random(-10000, 10000) * 0.0001);
+  vec2scale(box, angle_unit_cross,
+            circleOffset_box[1] * random(-10000, 10000) * 0.0001);
   vec2add(mainBumperCircle.center, mainBumperCircle.center, box);
 
   mainBumperCircle.radius = circleRadius;
@@ -96,7 +95,8 @@ void resetBall(float ball[], float ball_d[]) {
 
   // jitter the initial speed
   float box[2];
-  float boost = 0.22 * (angle_unit[1] + 1); // accelerate slightly if coming from below
+  float boost =
+      0.22 * (angle_unit[1] + 1); // accelerate slightly if coming from below
   vec2scale(ball_d, angle_unit, 0.12 + boost);
 
   vec2scale(box, angle_unit, 0.08 * random(-10000, 10000) * 0.0001);
@@ -105,11 +105,14 @@ void resetBall(float ball[], float ball_d[]) {
   vec2scale(box, angle_unit_cross, 0.35 * random(-10000, 10000) * 0.0001);
   vec2add(ball_d, ball_d, box);
 
-  ball_d[1] += 0.1 * abs(angle_unit[0]); // aim a bit up to compensate for gravity
+  ball_d[1] +=
+      0.1 * abs(angle_unit[0]); // aim a bit up to compensate for gravity
 }
 
-// inspired by stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
-float applyBumperCircle(float ball[], float ball_d[], float portion, struct bumperCircle *circle) {
+// inspired by
+// stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
+float applyBumperCircle(float ball[], float ball_d[], float portion,
+                        struct bumperCircle *circle) {
   float f[2];
   vec2sub(f, ball, circle->center);
 
@@ -132,7 +135,8 @@ float applyBumperCircle(float ball[], float ball_d[], float portion, struct bump
   return portion;
 }
 
-float applyWall(float ball[], float ball_d[], float portion, float normal[], float offset) {
+float applyWall(float ball[], float ball_d[], float portion, float normal[],
+                float offset) {
   // bounce?
   float bottomPos = vec2dot(ball, normal);
   float bottomPos_rel = bottomPos - offset;
@@ -171,28 +175,32 @@ void physicsStep(float ball[], float ball_d[], bool *hadCollision) {
     float *closestBumperNormal = 0;
     struct bumperCircle *closestBumperCircle = 0;
 
-    // float leftWallPortion = applyWall(ball, ball_d, travelPortion, leftWallNormal, -56);
+    // float leftWallPortion = applyWall(ball, ball_d, travelPortion,
+    // leftWallNormal, -56);
 
     // if (leftWallPortion < closestPortion) {
     //   closestPortion = leftWallPortion;
     //   closestBumperNormal = leftWallNormal;
     // }
 
-    // float rightWallPortion = applyWall(ball, ball_d, travelPortion, rightWallNormal, -56);
+    // float rightWallPortion = applyWall(ball, ball_d, travelPortion,
+    // rightWallNormal, -56);
 
     // if (rightWallPortion < closestPortion) {
     //   closestPortion = rightWallPortion;
     //   closestBumperNormal = rightWallNormal;
     // }
 
-    // float bottomWallPortion = applyWall(ball, ball_d, travelPortion, bottomWallNormal, -40);
+    // float bottomWallPortion = applyWall(ball, ball_d, travelPortion,
+    // bottomWallNormal, -40);
 
     // if (bottomWallPortion < closestPortion) {
     //   closestPortion = bottomWallPortion;
     //   closestBumperNormal = bottomWallNormal;
     // }
 
-    float mod1BumperCirclePortion = applyBumperCircle(ball, ball_d, travelPortion, &mainBumperCircle);
+    float mod1BumperCirclePortion =
+        applyBumperCircle(ball, ball_d, travelPortion, &mainBumperCircle);
 
     if (mod1BumperCirclePortion < closestPortion) {
       closestPortion = mod1BumperCirclePortion;
@@ -211,7 +219,8 @@ void physicsStep(float ball[], float ball_d[], bool *hadCollision) {
       travelPortion -= 0.05;
     }
 
-    // apply bumper restitution (circles are done last, so they are checked first)
+    // apply bumper restitution (circles are done last, so they are checked
+    // first)
     if (closestBumperCircle != 0) {
       float normal[2];
 
@@ -233,19 +242,21 @@ void physicsStep(float ball[], float ball_d[], bool *hadCollision) {
       float normalVel = vec2dot(ball_d, closestBumperNormal);
 
       // non-linear damping
-      float dampenedAmount = 2 * normalVel + min(closestBumperNormal[1] == 0 ? -0.2 : 0.12, -normalVel);
+      float dampenedAmount =
+          2 * normalVel +
+          min(closestBumperNormal[1] == 0 ? -0.2 : 0.12, -normalVel);
       ball_d[0] -= dampenedAmount * closestBumperNormal[0];
       ball_d[1] -= dampenedAmount * closestBumperNormal[1];
 
       *hadCollision = true;
     }
-  } while(travelPortion > 0 && iterCount < 20);
+  } while (travelPortion > 0 && iterCount < 20);
 }
 
 void setup() {
   pinMode(4, OUTPUT);
 
-  TV.begin(NTSC,120,96);
+  TV.begin(NTSC, 120, 96);
 
   tvCX = TV.hres() / 2;
   tvCY = TV.vres() / 2;
@@ -261,10 +272,12 @@ void loop() {
 
     TV.delay_frame(1);
 
-    int processedCount = 1 + frameCount / 100; // restrict how many balls are processed at first
+    int processedCount =
+        1 + frameCount / 100; // restrict how many balls are processed at first
     bool anyCollision = false;
 
-    for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
+    for (struct ball_movement *ball = balls;
+         ball < (struct ball_movement *)(&balls + 1); ball += 1) {
       // bail out early if needed
       processedCount -= 1;
       if (processedCount <= 0) {
@@ -290,7 +303,7 @@ void loop() {
 
     delay(500);
 
-    TV.begin(NTSC,120,96);
+    TV.begin(NTSC, 120, 96);
 
     tvCX = TV.hres() / 2;
     tvCY = TV.vres() / 2;
@@ -298,7 +311,8 @@ void loop() {
     // set up scene
     resetEnvironment();
 
-    for (struct ball_movement *ball = balls; ball < (struct ball_movement *)(&balls + 1); ball += 1) {
+    for (struct ball_movement *ball = balls;
+         ball < (struct ball_movement *)(&balls + 1); ball += 1) {
       resetBall(ball->position, ball->delta);
     }
 
@@ -309,7 +323,7 @@ void loop() {
 void drawBall(float ball[]) {
   // perform crude clipping to avoid uint8 overflow
   if (abs(ball[0]) < 100 && abs(ball[1]) < 100) {
-    float s_ball[2] = { ball[0] + tvCX, tvCY - ball[1] };
+    float s_ball[2] = {ball[0] + tvCX, tvCY - ball[1]};
 
     TV.set_pixel(s_ball[0], s_ball[1], INVERT);
   }
